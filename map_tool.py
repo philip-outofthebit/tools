@@ -201,11 +201,27 @@ class MainWindow(QMainWindow):
 
         label = QLabel("Select Tile:")
         controls_layout.addWidget(label)
+
         # Create a button for each defined tile type.
         for tile, properties in TILE_PROPERTIES.items():
+            # Create a horizontal layout for the button and color square.
+            tile_layout = QHBoxLayout()
+            
+            # Create a small square to represent the tile color.
+            color_square = QLabel()
+            color_square.setFixedSize(20, 20)  # Set the size of the square.
+            color_square.setStyleSheet(f"background-color: {properties['color'].name()}; border: 1px solid black;")
+            tile_layout.addWidget(color_square)
+            
+            # Create the button with the tile description.
             btn = QPushButton(properties["description"])
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
-            controls_layout.addWidget(btn)
+            tile_layout.addWidget(btn)
+            
+            # Add the layout to the controls panel.
+            container_widget = QWidget()
+            container_widget.setLayout(tile_layout)
+            controls_layout.addWidget(container_widget)
 
         controls_layout.addStretch(1)
 
