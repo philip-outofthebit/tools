@@ -12,13 +12,12 @@ TILE_PROPERTIES = {
     '#': {"color": QColor("black"), "description": "Solid Block (#)"},
     '+': {"color": QColor("darkGray"), "description": "Block if not entrance (+)"},
     '@': {"color": QColor("gray"), "description": "Drop-down block (@)"},
-    'W': {"color": QColor("blue"), "description": "Block from top no step down (W)"},
+    'W': {"color": QColor("blue"), "description": "Block: upward passage only (W)"},
     '!': {"color": QColor("magenta"), "description": "Block no slide (!)"},
     '^': {"color": QColor("lightGray"), "description": "Deadly pit (^)"},
-    '~': {"color": QColor("cyan"), "description": "Water (~)"},
+    '~': {"color": QColor("lightBlue"), "description": "Water (~)"},
     '&': {"color": QColor("red"), "description": "Fire (&)"},
     '(': {"color": QColor("purple"), "description": "Bubble Type 1 (()"},
-    'A': {"color": QColor("white"), "description": "Checkpoint / Player (A)"},
     "GO": {"color": QColor("white"), "description": "Game Object (custom)"},
 }
 
@@ -206,18 +205,19 @@ class MainWindow(QMainWindow):
         for tile, properties in TILE_PROPERTIES.items():
             # Create a horizontal layout for the button and color square.
             tile_layout = QHBoxLayout()
-            
+
             # Create a small square to represent the tile color.
             color_square = QLabel()
             color_square.setFixedSize(20, 20)  # Set the size of the square.
-            color_square.setStyleSheet(f"background-color: {properties['color'].name()}; border: 1px solid black;")
+            color_square.setStyleSheet(
+                f"background-color: {properties['color'].name()}; border: 1px solid black;")
             tile_layout.addWidget(color_square)
-            
+
             # Create the button with the tile description.
             btn = QPushButton(properties["description"])
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
             tile_layout.addWidget(btn)
-            
+
             # Add the layout to the controls panel.
             container_widget = QWidget()
             container_widget.setLayout(tile_layout)
