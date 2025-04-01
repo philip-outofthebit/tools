@@ -362,6 +362,7 @@ class MainWindow(QMainWindow):
     def set_mode(self, mode):
         self.grid_widget.mode = mode
         self.update_mode_styles()
+        self.update_tile_styles()  # Ensure tile styles are updated immediately
 
     def select_tile(self, tile):
         self.grid_widget.selected_tile = tile
@@ -371,11 +372,17 @@ class MainWindow(QMainWindow):
             self.set_mode("grid")
 
     def update_tile_styles(self):
-        for tile, btn in self.tile_buttons.items():
-            if tile == self.grid_widget.selected_tile:
-                btn.setStyleSheet("background-color: lightblue; font-weight: bold;")
-            else:
+        if self.grid_widget.mode == "sketch":
+            # Clear all tile button styles in Sketch Mode
+            for btn in self.tile_buttons.values():
                 btn.setStyleSheet("")
+        else:
+            # Highlight the selected tile in Grid Mode
+            for tile, btn in self.tile_buttons.items():
+                if tile == self.grid_widget.selected_tile:
+                    btn.setStyleSheet("background-color: lightblue; font-weight: bold;")
+                else:
+                    btn.setStyleSheet("")
 
     def update_mode_styles(self):
         for mode, btn in self.mode_buttons.items():
