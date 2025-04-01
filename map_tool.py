@@ -350,6 +350,9 @@ class MainWindow(QMainWindow):
     def select_tile(self, tile):
         self.grid_widget.selected_tile = tile
         self.update_tile_styles()
+        # Automatically switch to grid mode if in sketch mode
+        if self.grid_widget.mode == "sketch":
+            self.set_mode("grid")
 
     def update_tile_styles(self):
         for tile, btn in self.tile_buttons.items():
