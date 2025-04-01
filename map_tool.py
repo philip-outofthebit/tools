@@ -266,6 +266,8 @@ class MainWindow(QMainWindow):
         # Set initial size to match a 1920x1080 monitor.
         self.resize(1920, 1080)
         self.grid_widget = GridWidget()
+        self.tile_buttons = {}  # Store tile buttons for dynamic styling
+        self.mode_buttons = {}  # Store mode buttons for dynamic styling
         self.init_ui()
 
     def init_ui(self):
@@ -294,6 +296,7 @@ class MainWindow(QMainWindow):
             tile_layout.addWidget(color_square)
             btn = QPushButton(properties["description"])
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
+            self.tile_buttons[tile] = btn  # Store the button for styling
             tile_layout.addWidget(btn)
             container_widget = QWidget()
             container_widget.setLayout(tile_layout)
@@ -304,6 +307,7 @@ class MainWindow(QMainWindow):
         # Add mode toggle buttons
         btn_grid_mode = QPushButton("Grid Mode")
         btn_grid_mode.clicked.connect(lambda: self.set_mode("grid"))
+        self.mode_buttons["grid"] = btn_grid_mode  # Store the button for styling
         controls_layout.addWidget(btn_grid_mode)
 
         btn_clear = QPushButton("Clear Grid")
@@ -312,6 +316,7 @@ class MainWindow(QMainWindow):
 
         btn_sketch_mode = QPushButton("Sketch Mode")
         btn_sketch_mode.clicked.connect(lambda: self.set_mode("sketch"))
+        self.mode_buttons["sketch"] = btn_sketch_mode  # Store the button for styling
         controls_layout.addWidget(btn_sketch_mode)
 
         btn_clear_sketches = QPushButton("Clear Sketches")
@@ -334,11 +339,31 @@ class MainWindow(QMainWindow):
         undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
         undo_shortcut.activated.connect(self.grid_widget.undo)
 
+        # Set initial styles
+        self.update_tile_styles()
+        self.update_mode_styles()
+
     def set_mode(self, mode):
         self.grid_widget.mode = mode
+        self.update_mode_styles()
 
     def select_tile(self, tile):
         self.grid_widget.selected_tile = tile
+        self.update_tile_styles()
+
+    def update_tile_styles(self):
+        for tile, btn in self.tile_buttons.items():
+            if tile == self.grid_widget.selected_tile:
+                btn.setStyleSheet("background-color: lightblue; font-weight: bold;")
+            else:
+                btn.setStyleSheet("")
+
+    def update_mode_styles(self):
+        for mode, btn in self.mode_buttons.items():
+            if mode == self.grid_widget.mode:
+                btn.setStyleSheet("background-color: lightgreen; font-weight: bold;")
+            else:
+                btn.setStyleSheet("")
 
     def export_map(self):
         map_str = self.grid_widget.export_map()
