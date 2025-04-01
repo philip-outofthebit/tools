@@ -304,24 +304,29 @@ class MainWindow(QMainWindow):
 
         controls_layout.addStretch(1)
 
-        # Add mode toggle buttons
+        # Add mode toggle buttons in the same row
+        grid_row_layout = QHBoxLayout()
         btn_grid_mode = QPushButton("Grid Mode")
         btn_grid_mode.clicked.connect(lambda: self.set_mode("grid"))
-        self.mode_buttons["grid"] = btn_grid_mode  # Store the button for styling
-        controls_layout.addWidget(btn_grid_mode)
+        self.mode_buttons["grid"] = btn_grid_mode
+        grid_row_layout.addWidget(btn_grid_mode, stretch=3)
 
         btn_clear = QPushButton("Clear Grid")
         btn_clear.clicked.connect(self.grid_widget.clear_grid)
-        controls_layout.addWidget(btn_clear)
+        grid_row_layout.addWidget(btn_clear, stretch=1)
+        controls_layout.addLayout(grid_row_layout)
 
+        # Add sketch mode buttons in the same row
+        sketch_row_layout = QHBoxLayout()
         btn_sketch_mode = QPushButton("Sketch Mode")
         btn_sketch_mode.clicked.connect(lambda: self.set_mode("sketch"))
-        self.mode_buttons["sketch"] = btn_sketch_mode  # Store the button for styling
-        controls_layout.addWidget(btn_sketch_mode)
+        self.mode_buttons["sketch"] = btn_sketch_mode
+        sketch_row_layout.addWidget(btn_sketch_mode, stretch=3)
 
         btn_clear_sketches = QPushButton("Clear Sketches")
         btn_clear_sketches.clicked.connect(self.grid_widget.clear_sketches)
-        controls_layout.addWidget(btn_clear_sketches)
+        sketch_row_layout.addWidget(btn_clear_sketches, stretch=1)
+        controls_layout.addLayout(sketch_row_layout)
 
         btn_undo = QPushButton("Undo")
         btn_undo.clicked.connect(self.grid_widget.undo)
