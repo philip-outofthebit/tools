@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QLabel, QDialog, QTextEdit, QMessageBox, QInputDialog, QShortcut
 )
-from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence
+from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
 
 # Define tile properties (color and description) for easier management.
@@ -26,31 +26,50 @@ class GridWidget(QWidget):
     def __init__(self, rows=18, cols=32, cell_size=20, parent=None):
         super().__init__(parent)
         self.rows = rows
-        self.cols = cols  # Editable area is 32 columns.
+        self.cols = cols
         self.cell_size = cell_size
-        # Create grid: each row is a list of 32 characters, initialized with spaces.
         self.grid = [[' ' for _ in range(self.cols)] for _ in range(self.rows)]
-        # Default selected tile is solid block.
         self.selected_tile = '#'
-        # If using the "Game Object" option, selected_tile will be set to "GO".
-        self.is_dragging = False  # Track if the user is dragging the mouse.
-        self.history = []  # Stack to store the history of actions for undo.
-        self.current_drag_changes = []  # Track changes during a drag.
+        self.is_dragging = False
+        self.history = []
+        self.current_drag_changes = []
+
+        # Sketch-related attributes
+        self.sketch_layer = QPixmap(
+            self.width(), self.height())  # Layer for sketches
+        self.sketch_layer.fill(Qt.transparent)  # Transparent background
+        self.is_sketching = False  # Track if sketching is active
+        self.is_erasing = False  # Track if erasing is active
+        self.eraser_size = 50  # Diameter of the eraser
+        self.previous_sketch_pos = None  # Track the previous position for sketching
+        self.eraser_position = None  # Track the current position of the eraser
+
+        # Mode attribute to switch between sketch and grid modes
+        self.mode = "grid"
 
     def resizeEvent(self, event):
-        # Dynamically adjust cell size based on the widget's size.
+        # Dynamically adjust cell size and resize sketch layer
         new_width = self.width() // self.cols
         new_height = self.height() // self.rows
         self.cell_size = min(new_width, new_height)
+
+        # Resize the sketch layer
+        new_sketch_layer = QPixmap(self.width(), self.height())
+        new_sketch_layer.fill(Qt.transparent)
+        painter = QPainter(new_sketch_layer)
+        painter.drawPixmap(0, 0, self.sketch_layer)
+        painter.end()
+        self.sketch_layer = new_sketch_layer
+
         self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        # Draw only the editable grid (32 columns)
+
+        # Draw the grid
         for row in range(self.rows):
             for col in range(self.cols):
                 char = self.grid[row][col]
-                # For game objects without a defined color, just use white.
                 color = TILE_PROPERTIES.get(char, {}).get(
                     "color", QColor("white"))
                 x = col * self.cell_size
@@ -59,49 +78,68 @@ class GridWidget(QWidget):
                 painter.setPen(QPen(Qt.black))
                 painter.drawRect(x, y, self.cell_size, self.cell_size)
 
-                # If the tile is a game object (single character), draw the character.
-                if char not in TILE_PROPERTIES:  # Game objects are not in TILE_PROPERTIES.
-                    painter.setPen(QPen(Qt.black))  # Set text color to black.
+                if char not in TILE_PROPERTIES:
+                    painter.setPen(QPen(Qt.black))
                     font = painter.font()
-                    font.setPointSize(self.cell_size // 2)  # Adjust font size based on cell size.
+                    font.setPointSize(self.cell_size // 2)
                     painter.setFont(font)
-                    # Draw the character centered in the cell.
-                    painter.drawText(
-                        x, y, self.cell_size, self.cell_size,
-                        Qt.AlignCenter, char
-                    )
+                    painter.drawText(x, y, self.cell_size,
+                                     self.cell_size, Qt.AlignCenter, char)
+
+        # Draw the sketch layer on top of the grid
+        painter.drawPixmap(0, 0, self.sketch_layer)
+
+        # Draw the eraser circle if erasing
+        if self.is_erasing and self.eraser_position:
+            pen = QPen(Qt.red, 1, Qt.DashLine)  # Dashed red circle
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            radius = self.eraser_size // 2
+            painter.drawEllipse(self.eraser_position, radius, radius)
 
     def mousePressEvent(self, event):
-        col = event.x() // self.cell_size
-        row = event.y() // self.cell_size
-        if 0 <= col < self.cols and 0 <= row < self.rows:
-            self.is_dragging = True  # Start dragging.
-            self.current_drag_changes = []  # Reset drag changes.
-            # Save the initial state of the cell for undo.
-            self.current_drag_changes.append((row, col, self.grid[row][col]))
-            # If the selected tile is the generic "Game Object" option, prompt the user.
-            if self.selected_tile == "GO":
-                char, ok = QInputDialog.getText(
-                    self, "Game Object", "Enter a single character for game object:")
-                if ok and len(char) == 1:
-                    self.grid[row][col] = char
-                else:
-                    # Do nothing if cancelled or invalid input.
-                    return
-            else:
-                self.grid[row][col] = self.selected_tile
-            self.update()
-
-    def mouseMoveEvent(self, event):
-        if self.is_dragging:
+        if self.mode == "sketch":
+            if event.button() == Qt.LeftButton:
+                self.is_sketching = True
+                self.previous_sketch_pos = event.pos()  # Set the initial position
+                self.add_sketch(event.pos())
+            elif event.button() == Qt.RightButton:
+                self.is_erasing = True
+                self.erase_sketch(event.pos())
+        elif self.mode == "grid":
             col = event.x() // self.cell_size
             row = event.y() // self.cell_size
             if 0 <= col < self.cols and 0 <= row < self.rows:
-                # Only save the state if the cell is being changed.
+                self.is_dragging = True
+                self.current_drag_changes = []
+                self.current_drag_changes.append(
+                    (row, col, self.grid[row][col]))
+                if self.selected_tile == "GO":
+                    char, ok = QInputDialog.getText(
+                        self, "Game Object", "Enter a single character for game object:")
+                    if ok and len(char) == 1:
+                        self.grid[row][col] = char
+                    else:
+                        return
+                else:
+                    self.grid[row][col] = self.selected_tile
+                self.update()
+
+    def mouseMoveEvent(self, event):
+        if self.mode == "sketch":
+            if self.is_sketching:
+                self.add_sketch(event.pos())
+            elif self.is_erasing:
+                self.eraser_position = event.pos()  # Update eraser position
+                self.erase_sketch(event.pos())
+                self.update()
+        elif self.mode == "grid" and self.is_dragging:
+            col = event.x() // self.cell_size
+            row = event.y() // self.cell_size
+            if 0 <= col < self.cols and 0 <= row < self.rows:
                 if self.grid[row][col] != self.selected_tile:
                     self.current_drag_changes.append(
                         (row, col, self.grid[row][col]))
-                # Fill the cell while dragging.
                 if self.selected_tile == "GO":
                     char, ok = QInputDialog.getText(
                         self, "Game Object", "Enter a single character for game object:")
@@ -112,10 +150,43 @@ class GridWidget(QWidget):
                 self.update()
 
     def mouseReleaseEvent(self, event):
-        self.is_dragging = False  # Stop dragging.
-        if self.current_drag_changes:
-            # Push the drag changes to the history stack.
-            self.history.append(self.current_drag_changes)
+        if self.mode == "sketch":
+            self.is_sketching = False
+            self.previous_sketch_pos = None  # Reset the previous position
+            self.is_erasing = False
+            self.eraser_position = None  # Clear the eraser position
+            self.update()
+        elif self.mode == "grid":
+            self.is_dragging = False
+            if self.current_drag_changes:
+                self.history.append(self.current_drag_changes)
+
+    def add_sketch(self, pos):
+        painter = QPainter(self.sketch_layer)
+        pen = QPen(Qt.red, 2)  # Red pen for sketches
+        painter.setPen(pen)
+        if self.previous_sketch_pos:
+            # Draw a line from the previous position to the current position
+            painter.drawLine(self.previous_sketch_pos, pos)
+        else:
+            # Draw a single point if there's no previous position
+            painter.drawPoint(pos)
+        painter.end()
+        self.previous_sketch_pos = pos  # Update the previous position
+        self.update()
+
+    def erase_sketch(self, pos):
+        painter = QPainter(self.sketch_layer)
+        eraser = QBrush(Qt.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode_Clear)
+        painter.setBrush(eraser)
+        painter.drawEllipse(pos, self.eraser_size // 2, self.eraser_size // 2)
+        painter.end()
+        self.update()
+
+    def clear_sketches(self):
+        self.sketch_layer.fill(Qt.transparent)
+        self.update()
 
     def undo(self):
         if self.history:
@@ -215,47 +286,56 @@ class MainWindow(QMainWindow):
 
         # Create a button for each defined tile type.
         for tile, properties in TILE_PROPERTIES.items():
-            # Create a horizontal layout for the button and color square.
             tile_layout = QHBoxLayout()
-
-            # Create a small square to represent the tile color.
             color_square = QLabel()
-            color_square.setFixedSize(20, 20)  # Set the size of the square.
+            color_square.setFixedSize(20, 20)
             color_square.setStyleSheet(
                 f"background-color: {properties['color'].name()}; border: 1px solid black;")
             tile_layout.addWidget(color_square)
-
-            # Create the button with the tile description.
             btn = QPushButton(properties["description"])
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
             tile_layout.addWidget(btn)
-
-            # Add the layout to the controls panel.
             container_widget = QWidget()
             container_widget.setLayout(tile_layout)
             controls_layout.addWidget(container_widget)
 
         controls_layout.addStretch(1)
 
-        btn_export = QPushButton("Export Map")
-        btn_export.clicked.connect(self.export_map)
-        controls_layout.addWidget(btn_export)
-
-        btn_import = QPushButton("Import Map")
-        btn_import.clicked.connect(self.import_map)
-        controls_layout.addWidget(btn_import)
-
-        btn_undo = QPushButton("Undo")
-        btn_undo.clicked.connect(self.grid_widget.undo)
-        controls_layout.addWidget(btn_undo)
+        # Add mode toggle buttons
+        btn_grid_mode = QPushButton("Grid Mode")
+        btn_grid_mode.clicked.connect(lambda: self.set_mode("grid"))
+        controls_layout.addWidget(btn_grid_mode)
 
         btn_clear = QPushButton("Clear Grid")
         btn_clear.clicked.connect(self.grid_widget.clear_grid)
         controls_layout.addWidget(btn_clear)
 
+        btn_sketch_mode = QPushButton("Sketch Mode")
+        btn_sketch_mode.clicked.connect(lambda: self.set_mode("sketch"))
+        controls_layout.addWidget(btn_sketch_mode)
+
+        btn_clear_sketches = QPushButton("Clear Sketches")
+        btn_clear_sketches.clicked.connect(self.grid_widget.clear_sketches)
+        controls_layout.addWidget(btn_clear_sketches)
+
+        btn_undo = QPushButton("Undo")
+        btn_undo.clicked.connect(self.grid_widget.undo)
+        controls_layout.addWidget(btn_undo)
+
+        btn_import = QPushButton("Import Map")
+        btn_import.clicked.connect(self.import_map)
+        controls_layout.addWidget(btn_import)
+
+        btn_export = QPushButton("Export Map")
+        btn_export.clicked.connect(self.export_map)
+        controls_layout.addWidget(btn_export)
+
         # Add a keyboard shortcut for undo (Ctrl + Z).
         undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
         undo_shortcut.activated.connect(self.grid_widget.undo)
+
+    def set_mode(self, mode):
+        self.grid_widget.mode = mode
 
     def select_tile(self, tile):
         self.grid_widget.selected_tile = tile
