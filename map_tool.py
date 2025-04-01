@@ -59,6 +59,18 @@ class GridWidget(QWidget):
                 painter.setPen(QPen(Qt.black))
                 painter.drawRect(x, y, self.cell_size, self.cell_size)
 
+                # If the tile is a game object (single character), draw the character.
+                if char not in TILE_PROPERTIES:  # Game objects are not in TILE_PROPERTIES.
+                    painter.setPen(QPen(Qt.black))  # Set text color to black.
+                    font = painter.font()
+                    font.setPointSize(self.cell_size // 2)  # Adjust font size based on cell size.
+                    painter.setFont(font)
+                    # Draw the character centered in the cell.
+                    painter.drawText(
+                        x, y, self.cell_size, self.cell_size,
+                        Qt.AlignCenter, char
+                    )
+
     def mousePressEvent(self, event):
         col = event.x() // self.cell_size
         row = event.y() // self.cell_size
