@@ -47,6 +47,9 @@ class GridWidget(QWidget):
         # Mode attribute to switch between sketch and grid modes
         self.mode = "grid"
 
+        # Store the original selected tile for temporary eraser functionality
+        self.original_selected_tile = None
+
     def resizeEvent(self, event):
         # Dynamically adjust cell size and resize sketch layer
         new_width = self.width() // self.cols
@@ -110,6 +113,10 @@ class GridWidget(QWidget):
             col = event.x() // self.cell_size
             row = event.y() // self.cell_size
             if 0 <= col < self.cols and 0 <= row < self.rows:
+                if event.button() == Qt.RightButton:
+                    # Temporarily switch to Empty Space
+                    self.original_selected_tile = self.selected_tile
+                    self.selected_tile = ' '
                 self.is_dragging = True
                 self.current_drag_changes = []
                 self.current_drag_changes.append(
@@ -157,6 +164,10 @@ class GridWidget(QWidget):
             self.eraser_position = None  # Clear the eraser position
             self.update()
         elif self.mode == "grid":
+            if event.button() == Qt.RightButton and self.original_selected_tile is not None:
+                # Restore the original selected tile
+                self.selected_tile = self.original_selected_tile
+                self.original_selected_tile = None
             self.is_dragging = False
             if self.current_drag_changes:
                 self.history.append(self.current_drag_changes)
