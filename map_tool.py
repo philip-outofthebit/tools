@@ -1,3 +1,16 @@
+"""
+Map Builder Tool
+
+This tool provides an interactive GUI for designing and managing 2D maps. 
+It includes features such as grid-based tile selection, sketching, undo/redo, 
+and map import/export functionality. The tool is designed to be user-friendly 
+and highly customizable for various use cases.
+
+Author: Philip
+
+Feel free to reach out for feedback or suggestions.
+"""
+
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
@@ -5,6 +18,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
+
+VERSION = "1.0.2"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
@@ -46,6 +61,9 @@ class GridWidget(QWidget):
 
         # Mode attribute to switch between sketch and grid modes
         self.mode = "grid"
+
+        # Store the original selected tile for temporary eraser functionality
+        self.original_selected_tile = None
 
     def resizeEvent(self, event):
         # Dynamically adjust cell size and resize sketch layer
@@ -110,6 +128,10 @@ class GridWidget(QWidget):
             col = event.x() // self.cell_size
             row = event.y() // self.cell_size
             if 0 <= col < self.cols and 0 <= row < self.rows:
+                if event.button() == Qt.RightButton:
+                    # Temporarily switch to Empty Space
+                    self.original_selected_tile = self.selected_tile
+                    self.selected_tile = ' '
                 self.is_dragging = True
                 self.current_drag_changes = []
                 self.current_drag_changes.append(
@@ -157,6 +179,10 @@ class GridWidget(QWidget):
             self.eraser_position = None  # Clear the eraser position
             self.update()
         elif self.mode == "grid":
+            if event.button() == Qt.RightButton and self.original_selected_tile is not None:
+                # Restore the original selected tile
+                self.selected_tile = self.original_selected_tile
+                self.original_selected_tile = None
             self.is_dragging = False
             if self.current_drag_changes:
                 self.history.append(self.current_drag_changes)
@@ -304,24 +330,29 @@ class MainWindow(QMainWindow):
 
         controls_layout.addStretch(1)
 
-        # Add mode toggle buttons
+        # Add mode toggle buttons in the same row
+        grid_row_layout = QHBoxLayout()
         btn_grid_mode = QPushButton("Grid Mode")
         btn_grid_mode.clicked.connect(lambda: self.set_mode("grid"))
-        self.mode_buttons["grid"] = btn_grid_mode  # Store the button for styling
-        controls_layout.addWidget(btn_grid_mode)
+        self.mode_buttons["grid"] = btn_grid_mode
+        grid_row_layout.addWidget(btn_grid_mode, stretch=3)
 
         btn_clear = QPushButton("Clear Grid")
         btn_clear.clicked.connect(self.grid_widget.clear_grid)
-        controls_layout.addWidget(btn_clear)
+        grid_row_layout.addWidget(btn_clear, stretch=1)
+        controls_layout.addLayout(grid_row_layout)
 
+        # Add sketch mode buttons in the same row
+        sketch_row_layout = QHBoxLayout()
         btn_sketch_mode = QPushButton("Sketch Mode")
         btn_sketch_mode.clicked.connect(lambda: self.set_mode("sketch"))
-        self.mode_buttons["sketch"] = btn_sketch_mode  # Store the button for styling
-        controls_layout.addWidget(btn_sketch_mode)
+        self.mode_buttons["sketch"] = btn_sketch_mode
+        sketch_row_layout.addWidget(btn_sketch_mode, stretch=3)
 
         btn_clear_sketches = QPushButton("Clear Sketches")
         btn_clear_sketches.clicked.connect(self.grid_widget.clear_sketches)
-        controls_layout.addWidget(btn_clear_sketches)
+        sketch_row_layout.addWidget(btn_clear_sketches, stretch=1)
+        controls_layout.addLayout(sketch_row_layout)
 
         btn_undo = QPushButton("Undo")
         btn_undo.clicked.connect(self.grid_widget.undo)
@@ -343,9 +374,27 @@ class MainWindow(QMainWindow):
         self.update_tile_styles()
         self.update_mode_styles()
 
+        # Add version information label
+        version_label = QLabel(f"Version {VERSION}", self)
+        version_label.setStyleSheet("color: gray; font-size: 10px;")
+        version_label.setFixedSize(100, 20)
+        version_label.move(0, self.height() - 30)
+        version_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        version_label.show()
+
+        # Update the label position dynamically on window resize
+        self.version_label = version_label
+        self.resizeEvent = self.update_version_label_position
+
+    def update_version_label_position(self, event):
+        # Dynamically reposition the version label
+        self.version_label.move(0, self.height() - 30)
+        super().resizeEvent(event)
+
     def set_mode(self, mode):
         self.grid_widget.mode = mode
         self.update_mode_styles()
+        self.update_tile_styles()  # Ensure tile styles are updated immediately
 
     def select_tile(self, tile):
         self.grid_widget.selected_tile = tile
@@ -355,16 +404,24 @@ class MainWindow(QMainWindow):
             self.set_mode("grid")
 
     def update_tile_styles(self):
-        for tile, btn in self.tile_buttons.items():
-            if tile == self.grid_widget.selected_tile:
-                btn.setStyleSheet("background-color: lightblue; font-weight: bold;")
-            else:
+        if self.grid_widget.mode == "sketch":
+            # Clear all tile button styles in Sketch Mode
+            for btn in self.tile_buttons.values():
                 btn.setStyleSheet("")
+        else:
+            # Highlight the selected tile in Grid Mode
+            for tile, btn in self.tile_buttons.items():
+                if tile == self.grid_widget.selected_tile:
+                    btn.setStyleSheet(
+                        "background-color: lightblue; font-weight: bold;")
+                else:
+                    btn.setStyleSheet("")
 
     def update_mode_styles(self):
         for mode, btn in self.mode_buttons.items():
             if mode == self.grid_widget.mode:
-                btn.setStyleSheet("background-color: lightgreen; font-weight: bold;")
+                btn.setStyleSheet(
+                    "background-color: lightgreen; font-weight: bold;")
             else:
                 btn.setStyleSheet("")
 
