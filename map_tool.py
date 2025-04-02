@@ -1,3 +1,16 @@
+"""
+Map Builder Tool
+
+This tool provides an interactive GUI for designing and managing 2D maps. 
+It includes features such as grid-based tile selection, sketching, undo/redo, 
+and map import/export functionality. The tool is designed to be user-friendly 
+and highly customizable for various use cases.
+
+Author: Philip
+
+Feel free to reach out for feedback or suggestions.
+"""
+
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
@@ -5,6 +18,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
+
+VERSION = "1.0.2"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
@@ -359,6 +374,23 @@ class MainWindow(QMainWindow):
         self.update_tile_styles()
         self.update_mode_styles()
 
+        # Add version information label
+        version_label = QLabel(f"Version {VERSION}", self)
+        version_label.setStyleSheet("color: gray; font-size: 10px;")
+        version_label.setFixedSize(100, 20)
+        version_label.move(0, self.height() - 30)
+        version_label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        version_label.show()
+
+        # Update the label position dynamically on window resize
+        self.version_label = version_label
+        self.resizeEvent = self.update_version_label_position
+
+    def update_version_label_position(self, event):
+        # Dynamically reposition the version label
+        self.version_label.move(0, self.height() - 30)
+        super().resizeEvent(event)
+
     def set_mode(self, mode):
         self.grid_widget.mode = mode
         self.update_mode_styles()
@@ -380,14 +412,16 @@ class MainWindow(QMainWindow):
             # Highlight the selected tile in Grid Mode
             for tile, btn in self.tile_buttons.items():
                 if tile == self.grid_widget.selected_tile:
-                    btn.setStyleSheet("background-color: lightblue; font-weight: bold;")
+                    btn.setStyleSheet(
+                        "background-color: lightblue; font-weight: bold;")
                 else:
                     btn.setStyleSheet("")
 
     def update_mode_styles(self):
         for mode, btn in self.mode_buttons.items():
             if mode == self.grid_widget.mode:
-                btn.setStyleSheet("background-color: lightgreen; font-weight: bold;")
+                btn.setStyleSheet(
+                    "background-color: lightgreen; font-weight: bold;")
             else:
                 btn.setStyleSheet("")
 
