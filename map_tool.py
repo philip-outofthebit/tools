@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
 
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
