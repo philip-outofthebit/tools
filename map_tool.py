@@ -32,6 +32,7 @@ TILE_PROPERTIES = {
     '^': {"color": QColor("lightGray"), "description": "Deadly pit (^)"},
     '~': {"color": QColor("lightBlue"), "description": "Water (~)"},
     '&': {"color": QColor("red"), "description": "Fire (&)"},
+    '$': {"color": QColor("darkRed"), "description": "Deadly water ($)"},
     '(': {"color": QColor("purple"), "description": "Bubble Type 1 (()"},
     "GO": {"color": QColor("white"), "description": "Game Object (custom)"},
 }
