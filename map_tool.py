@@ -34,8 +34,23 @@ TILE_PROPERTIES = {
     '&': {"color": QColor("red"), "description": "Fire (&)"},
     '$': {"color": QColor("darkRed"), "description": "Deadly water ($)"},
     '(': {"color": QColor("purple"), "description": "Bubble Type 1 (()"},
+    "<": {"color": QColor("white"), "description": "Respawn face left"},
+    ">": {"color": QColor("white"), "description": "Respawn face right"},
     "GO": {"color": QColor("white"), "description": "Game Object (custom)"},
 }
+
+ALWAYS_SHOW_CHARS = ['<', '>']
+
+
+def get_contrast_color(color) -> QColor:
+    """
+    Calculate the contrast color based on the luminance of the background color.
+    """
+    r, g, b = color.red(), color.green(), color.blue()
+    # Calculate luminance (perceived brightness)
+    luminance = (0.299 * r + 0.587 * g + 0.144 * b) / 255
+    # Return white if luminance is low (dark background), wise black
+    return QColor("white") if luminance < 0.5 else QColor("black")
 
 
 class GridWidget(QWidget):
@@ -49,6 +64,7 @@ class GridWidget(QWidget):
         self.is_dragging = False
         self.history = []
         self.current_drag_changes = []
+        self.show_tile_letters = False  # Default: do not show tile letters
 
         # Sketch-related attributes
         self.sketch_layer = QPixmap(
@@ -97,6 +113,17 @@ class GridWidget(QWidget):
                 painter.setPen(QPen(Qt.black))
                 painter.drawRect(x, y, self.cell_size, self.cell_size)
 
+                # Draw tile's letter if enabled. Always show '<', and '>'
+                if self.show_tile_letters or char in ALWAYS_SHOW_CHARS:
+                    text_color = get_contrast_color(color)
+                    painter.setPen(QPen(text_color))
+                    font = painter.font()
+                    font.setPointSize(self.cell_size // 2)
+                    painter.setFont(font)
+                    painter.drawText(x, y, self.cell_size,
+                                     self.cell_size, Qt.AlignCenter, char)
+
+                # Always draw custom objects
                 if char not in TILE_PROPERTIES:
                     painter.setPen(QPen(Qt.black))
                     font = painter.font()
@@ -331,6 +358,10 @@ class MainWindow(QMainWindow):
 
         controls_layout.addStretch(1)
 
+        btn_toggle_letters = QPushButton("Show Tile Letters")
+        btn_toggle_letters.setCheckable(True)
+        btn_toggle_letters.clicked.connect(self.toggle_tile_letters)
+        controls_layout.addWidget(btn_toggle_letters)
         # Add mode toggle buttons in the same row
         grid_row_layout = QHBoxLayout()
         btn_grid_mode = QPushButton("Grid Mode")
@@ -403,6 +434,11 @@ class MainWindow(QMainWindow):
         # Automatically switch to grid mode if in sketch mode
         if self.grid_widget.mode == "sketch":
             self.set_mode("grid")
+
+    def toggle_tile_letters(self):
+        # Toggle the show_title_letters attribute
+        self.grid_widget.show_tile_letters = not self.grid_widget.show_tile_letters
+        self.grid_widget.update()
 
     def update_tile_styles(self):
         if self.grid_widget.mode == "sketch":
