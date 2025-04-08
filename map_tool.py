@@ -18,8 +18,9 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
+import platform
 
-VERSION = "1.0.3"
+VERSION = f"1.0.4a {platform.system()}"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
@@ -34,13 +35,14 @@ TILE_PROPERTIES = {
     '&': {"color": QColor("red"), "description": "Fire (&)"},
     '$': {"color": QColor("darkRed"), "description": "Deadly water ($)"},
     '(': {"color": QColor("purple"), "description": "Bubble Type 1 (()"},
-    "<": {"color": QColor("white"), "description": "Respawn face left"},
-    ">": {"color": QColor("white"), "description": "Respawn face right"},
+    "<": {"color": QColor("lightGray"), "description": "Respawn face left"},
+    ">": {"color": QColor("lightGray"), "description": "Respawn face right"},
     "GO": {"color": QColor("white"), "description": "Game Object (custom)"},
 }
 
 ALWAYS_SHOW_CHARS = ['<', '>']
 
+IS_WINDOWS = platform.system() == "Windows"
 
 def get_contrast_color(color) -> QColor:
     """
@@ -113,12 +115,13 @@ class GridWidget(QWidget):
                 painter.setPen(QPen(Qt.black))
                 painter.drawRect(x, y, self.cell_size, self.cell_size)
 
+                font_point_size = self.cell_size // 4 if IS_WINDOWS else self.cell_size // 2
                 # Draw tile's letter if enabled. Always show '<', and '>'
                 if self.show_tile_letters or char in ALWAYS_SHOW_CHARS:
                     text_color = get_contrast_color(color)
                     painter.setPen(QPen(text_color))
                     font = painter.font()
-                    font.setPointSize(self.cell_size // 2)
+                    font.setPointSize(font_point_size)
                     painter.setFont(font)
                     painter.drawText(x, y, self.cell_size,
                                      self.cell_size, Qt.AlignCenter, char)
@@ -127,7 +130,7 @@ class GridWidget(QWidget):
                 if char not in TILE_PROPERTIES:
                     painter.setPen(QPen(Qt.black))
                     font = painter.font()
-                    font.setPointSize(self.cell_size // 2)
+                    font.setPointSize(font_point_size)
                     painter.setFont(font)
                     painter.drawText(x, y, self.cell_size,
                                      self.cell_size, Qt.AlignCenter, char)
@@ -359,6 +362,7 @@ class MainWindow(QMainWindow):
 
             # Create the button for the tile
             btn = QPushButton(properties["description"])
+            btn.setMinimumWidth(150)
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
             self.tile_buttons[tile] = btn  # Store the button for styling
             tile_layout.addWidget(btn)
@@ -367,6 +371,10 @@ class MainWindow(QMainWindow):
             container_widget = QWidget()
             container_widget.setLayout(tile_layout)
             controls_layout.addWidget(container_widget)
+
+        # Reduce spacing and margins
+        controls_layout.setSpacing(5) # Reduce spacing between widgets
+        controls_layout.setContentsMargins(5, 5, 5, 5) # Reduce margins around the layout
 
         controls_layout.addStretch(1)
 
