@@ -343,15 +343,27 @@ class MainWindow(QMainWindow):
         # Create a button for each defined tile type.
         for tile, properties in TILE_PROPERTIES.items():
             tile_layout = QHBoxLayout()
-            color_square = QLabel()
-            color_square.setFixedSize(20, 20)
+
+            # Create a QLable for the color square with the tile's letter
+            color_square = QLabel(tile)
+            color_square.setFixedSize(30, 30)
+            color_square.setAlignment(Qt.AlignCenter)  # Center the letter
+            background_color = properties["color"]
+            text_color = get_contrast_color(background_color)
+
             color_square.setStyleSheet(
-                f"background-color: {properties['color'].name()}; border: 1px solid black;")
+                f"background-color: {background_color.name()}; "
+                f"color: {text_color.name()}; "
+                "border: 1px solid black; font-weight: bold")
             tile_layout.addWidget(color_square)
+
+            # Create the button for the tile
             btn = QPushButton(properties["description"])
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
             self.tile_buttons[tile] = btn  # Store the button for styling
             tile_layout.addWidget(btn)
+
+            # Add the layout to the control panel
             container_widget = QWidget()
             container_widget.setLayout(tile_layout)
             controls_layout.addWidget(container_widget)
