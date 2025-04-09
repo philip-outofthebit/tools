@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
 import platform
+from typing import Optional
 
 VERSION = f"1.0.4a {platform.system()}"
 
@@ -44,7 +45,8 @@ ALWAYS_SHOW_CHARS = ['<', '>']
 
 IS_WINDOWS = platform.system() == "Windows"
 
-def get_contrast_color(color) -> QColor:
+
+def get_contrast_color(color: QColor) -> QColor:
     """
     Calculate the contrast color based on the luminance of the background color.
     """
@@ -56,7 +58,7 @@ def get_contrast_color(color) -> QColor:
 
 
 class GridWidget(QWidget):
-    def __init__(self, rows=18, cols=32, cell_size=20, parent=None):
+    def __init__(self, rows: int = 18, cols: int = 32, cell_size: int = 20, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.rows = rows
         self.cols = cols
@@ -84,7 +86,7 @@ class GridWidget(QWidget):
         # Store the original selected tile for temporary eraser functionality
         self.original_selected_tile = None
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: 'QResizeEvent') -> None:
         # Dynamically adjust cell size and resize sketch layer
         new_width = self.width() // self.cols
         new_height = self.height() // self.rows
@@ -100,7 +102,7 @@ class GridWidget(QWidget):
 
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: 'QPaintEvent') -> None:
         painter = QPainter(self)
 
         # Draw the grid
@@ -146,7 +148,7 @@ class GridWidget(QWidget):
             radius = self.eraser_size // 2
             painter.drawEllipse(self.eraser_position, radius, radius)
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: 'QMouseEvent') -> None:
         if self.mode == "sketch":
             if event.button() == Qt.LeftButton:
                 self.is_sketching = True
@@ -178,7 +180,7 @@ class GridWidget(QWidget):
                     self.grid[row][col] = self.selected_tile
                 self.update()
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: 'QMouseEvent') -> None:
         if self.mode == "sketch":
             if self.is_sketching:
                 self.add_sketch(event.pos())
@@ -202,7 +204,7 @@ class GridWidget(QWidget):
                     self.grid[row][col] = self.selected_tile
                 self.update()
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, event: 'QMouseEvent') -> None:
         if self.mode == "sketch":
             self.is_sketching = False
             self.previous_sketch_pos = None  # Reset the previous position
@@ -218,7 +220,7 @@ class GridWidget(QWidget):
             if self.current_drag_changes:
                 self.history.append(self.current_drag_changes)
 
-    def add_sketch(self, pos):
+    def add_sketch(self, pos: 'QPoint') -> None:
         painter = QPainter(self.sketch_layer)
         pen = QPen(Qt.red, 2)  # Red pen for sketches
         painter.setPen(pen)
@@ -232,7 +234,7 @@ class GridWidget(QWidget):
         self.previous_sketch_pos = pos  # Update the previous position
         self.update()
 
-    def erase_sketch(self, pos):
+    def erase_sketch(self, pos: 'QPoint') -> None:
         painter = QPainter(self.sketch_layer)
         eraser = QBrush(Qt.transparent)
         painter.setCompositionMode(QPainter.CompositionMode_Clear)
@@ -241,11 +243,11 @@ class GridWidget(QWidget):
         painter.end()
         self.update()
 
-    def clear_sketches(self):
+    def clear_sketches(self) -> None:
         self.sketch_layer.fill(Qt.transparent)
         self.update()
 
-    def undo(self):
+    def undo(self) -> None:
         if self.history:
             # Pop the last action from the history stack.
             last_action = self.history.pop()
@@ -254,7 +256,7 @@ class GridWidget(QWidget):
                 self.grid[row][col] = previous_value
             self.update()
 
-    def export_map(self):
+    def export_map(self) -> str:
         # Build a string where each row is 32 characters from the grid,
         # followed by a '*' as the 33rd character.
         lines = []
@@ -267,7 +269,7 @@ class GridWidget(QWidget):
         result += "\";"
         return result
 
-    def import_map(self, map_string):
+    def import_map(self, map_string: str) -> None:
         # Expected format:
         # "\
         # [32 editable chars plus '*']\
@@ -305,7 +307,7 @@ class GridWidget(QWidget):
         self.grid = new_grid
         self.update()
 
-    def clear_grid(self):
+    def clear_grid(self) -> None:
         # Save the current grid state for undo.
         current_state = [(row, col, self.grid[row][col])
                          for row in range(self.rows)
@@ -317,7 +319,7 @@ class GridWidget(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Map Builder")
         # Set initial size to match a 1920x1080 monitor.
@@ -327,7 +329,7 @@ class MainWindow(QMainWindow):
         self.mode_buttons = {}  # Store mode buttons for dynamic styling
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self) -> None:
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QHBoxLayout()
@@ -373,8 +375,9 @@ class MainWindow(QMainWindow):
             controls_layout.addWidget(container_widget)
 
         # Reduce spacing and margins
-        controls_layout.setSpacing(5) # Reduce spacing between widgets
-        controls_layout.setContentsMargins(5, 5, 5, 5) # Reduce margins around the layout
+        controls_layout.setSpacing(5)  # Reduce spacing between widgets
+        # Reduce margins around the layout
+        controls_layout.setContentsMargins(5, 5, 5, 5)
 
         controls_layout.addStretch(1)
 
@@ -438,29 +441,29 @@ class MainWindow(QMainWindow):
         self.version_label = version_label
         self.resizeEvent = self.update_version_label_position
 
-    def update_version_label_position(self, event):
+    def update_version_label_position(self, event: 'QResizeEvent') -> None:
         # Dynamically reposition the version label
         self.version_label.move(0, self.height() - 30)
         super().resizeEvent(event)
 
-    def set_mode(self, mode):
+    def set_mode(self, mode: str) -> None:
         self.grid_widget.mode = mode
         self.update_mode_styles()
         self.update_tile_styles()  # Ensure tile styles are updated immediately
 
-    def select_tile(self, tile):
+    def select_tile(self, tile: str) -> None:
         self.grid_widget.selected_tile = tile
         self.update_tile_styles()
         # Automatically switch to grid mode if in sketch mode
         if self.grid_widget.mode == "sketch":
             self.set_mode("grid")
 
-    def toggle_tile_letters(self):
+    def toggle_tile_letters(self) -> None:
         # Toggle the show_title_letters attribute
         self.grid_widget.show_tile_letters = not self.grid_widget.show_tile_letters
         self.grid_widget.update()
 
-    def update_tile_styles(self):
+    def update_tile_styles(self) -> None:
         if self.grid_widget.mode == "sketch":
             # Clear all tile button styles in Sketch Mode
             for btn in self.tile_buttons.values():
@@ -474,7 +477,7 @@ class MainWindow(QMainWindow):
                 else:
                     btn.setStyleSheet("")
 
-    def update_mode_styles(self):
+    def update_mode_styles(self) -> None:
         for mode, btn in self.mode_buttons.items():
             if mode == self.grid_widget.mode:
                 btn.setStyleSheet(
@@ -482,7 +485,7 @@ class MainWindow(QMainWindow):
             else:
                 btn.setStyleSheet("")
 
-    def export_map(self):
+    def export_map(self) -> None:
         map_str = self.grid_widget.export_map()
         dlg = QDialog(self)
         dlg.setWindowTitle("Exported Map String")
@@ -496,7 +499,7 @@ class MainWindow(QMainWindow):
         dlg_layout.addWidget(btn_close)
         dlg.exec_()
 
-    def import_map(self):
+    def import_map(self) -> None:
         dlg = QDialog(self)
         dlg.setWindowTitle("Import Map String")
         dlg_layout = QVBoxLayout()
@@ -509,7 +512,7 @@ class MainWindow(QMainWindow):
         dlg_layout.addWidget(btn_import)
         dlg.exec_()
 
-    def handle_import(self, map_str, dialog):
+    def handle_import(self, map_str: str, dialog: QDialog) -> None:
         try:
             self.grid_widget.import_map(map_str)
             dialog.accept()
@@ -518,7 +521,7 @@ class MainWindow(QMainWindow):
                 self, "Error", "Failed to import map: " + str(e))
 
 
-def main():
+def main() -> None:
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
