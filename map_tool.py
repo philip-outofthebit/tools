@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt
 import platform
 from typing import Optional
 
-VERSION = f"1.0.4a {platform.system()}"
+VERSION = f"1.0.5 {platform.system()}"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
@@ -486,6 +486,20 @@ class MainWindow(QMainWindow):
                 btn.setStyleSheet("")
 
     def export_map(self) -> None:
+        # Check and ask user if '0' should be added to top-left corner
+        if self.grid_widget.grid[0][0] != '0':
+            reply = QMessageBox.question(
+                self,
+                "Top-Left Corner Check",
+                "'0' is usually used for locating the background and camera.\
+                    Would you like to add '0' to the top-left corner?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                # Update the grid to add '0' to the top-left corner
+                self.grid_widget.grid[0][0] = '0'
+                self.grid_widget.update()
+
         map_str = self.grid_widget.export_map()
         dlg = QDialog(self)
         dlg.setWindowTitle("Exported Map String")
