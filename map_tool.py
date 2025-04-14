@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt
 import platform
 from typing import Optional
 
-VERSION = f"1.0.5 {platform.system()}"
+VERSION = f"1.0.6 {platform.system()}"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
@@ -38,10 +38,11 @@ TILE_PROPERTIES = {
     '(': {"color": QColor("purple"), "description": "Bubble Type 1 (()"},
     "<": {"color": QColor("lightGray"), "description": "Respawn face left"},
     ">": {"color": QColor("lightGray"), "description": "Respawn face right"},
+    ".": {"color": QColor("white"), "description": "Placeholder"},
     "GO": {"color": QColor("white"), "description": "Game Object (custom)"},
 }
 
-ALWAYS_SHOW_CHARS = ['<', '>']
+ALWAYS_SHOW_CHARS = ['<', '>', '.']
 
 IS_WINDOWS = platform.system() == "Windows"
 
