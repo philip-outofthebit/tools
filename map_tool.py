@@ -492,26 +492,36 @@ class MainWindow(QMainWindow):
             reply = QMessageBox.question(
                 self,
                 "Top-Left Corner Check",
-                "'0' is usually used for locating the background and camera.\
-                    Would you like to add '0' to the top-left corner?",
-                QMessageBox.Yes | QMessageBox.No
+                "'0' is needed in the top-left corner for background and camera alignment.\n\nIs there a specific reason you don't want '0' at the top-left corner?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
             )
-            if reply == QMessageBox.Yes:
+            if reply == QMessageBox.No:
                 # Update the grid to add '0' to the top-left corner
                 self.grid_widget.grid[0][0] = '0'
                 self.grid_widget.update()
 
         map_str = self.grid_widget.export_map()
+
+        # Create the export dialog
         dlg = QDialog(self)
         dlg.setWindowTitle("Exported Map String")
+        dlg.resize(400, 500)
+
+        # Create the layout and text widget
         dlg_layout = QVBoxLayout()
         dlg.setLayout(dlg_layout)
         text_edit = QTextEdit()
         text_edit.setPlainText(map_str)
+        text_edit.setReadOnly(True)
         dlg_layout.addWidget(text_edit)
+
+        # Add a close button
         btn_close = QPushButton("Close")
         btn_close.clicked.connect(dlg.accept)
         dlg_layout.addWidget(btn_close)
+
+        # Show the dialog
         dlg.exec_()
 
     def import_map(self) -> None:
