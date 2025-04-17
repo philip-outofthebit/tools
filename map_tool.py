@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt
 import platform
 from typing import Optional
 
-VERSION = f"1.0.6 {platform.system()}"
+VERSION = f"1.0.7 {platform.system()}"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
@@ -503,6 +503,10 @@ class MainWindow(QMainWindow):
 
         map_str = self.grid_widget.export_map()
 
+        # Copy the map string to the clipboard
+        clipboard = QApplication.clipboard()
+        clipboard.setText(map_str)
+
         # Create the export dialog
         dlg = QDialog(self)
         dlg.setWindowTitle("Exported Map String")
@@ -515,6 +519,11 @@ class MainWindow(QMainWindow):
         text_edit.setPlainText(map_str)
         text_edit.setReadOnly(True)
         dlg_layout.addWidget(text_edit)
+
+        # Add a lable to inform the user that the string has been copies
+        copied_label = QLabel("Copied to clipboard.")
+        copied_label.setStyleSheet("font-weight: bold;")
+        dlg_layout.addWidget(copied_label)
 
         # Add a close button
         btn_close = QPushButton("Close")
