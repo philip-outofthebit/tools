@@ -25,17 +25,17 @@ VERSION = f"1.0.7 {platform.system()}"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
-    ' ': {"color": QColor("white"), "description": "Empty Space ( )"},
-    '#': {"color": QColor("black"), "description": "Solid Block (#)"},
-    '+': {"color": QColor("darkGray"), "description": "Block if not entrance (+)"},
-    '@': {"color": QColor("gray"), "description": "Drop-down block (@)"},
-    'W': {"color": QColor("blue"), "description": "Block: upward passage only (W)"},
-    '!': {"color": QColor("magenta"), "description": "Block no slide (!)"},
-    '^': {"color": QColor("lightGray"), "description": "Deadly pit (^)"},
-    '~': {"color": QColor("lightBlue"), "description": "Water (~)"},
-    '&': {"color": QColor("red"), "description": "Fire (&)"},
-    '$': {"color": QColor("darkRed"), "description": "Deadly water ($)"},
-    '(': {"color": QColor("purple"), "description": "Bubble Type 1 (()"},
+    ' ': {"color": QColor("white"), "description": "Empty Space"},
+    '#': {"color": QColor("black"), "description": "Solid Block"},
+    # '+': {"color": QColor("darkGray"), "description": "Block if not entrance"},
+    '@': {"color": QColor("gray"), "description": "Drop-down block"},
+    'W': {"color": QColor("blue"), "description": "Block: upward passage only"},
+    '!': {"color": QColor("magenta"), "description": "Block no slide"},
+    '^': {"color": QColor("lightGray"), "description": "Deadly pit"},
+    '~': {"color": QColor("lightBlue"), "description": "Water"},
+    '&': {"color": QColor("red"), "description": "Fire"},
+    '$': {"color": QColor("darkRed"), "description": "Deadly water"},
+    '(': {"color": QColor("purple"), "description": "Bubble Type 1"},
     "<": {"color": QColor("lightGray"), "description": "Respawn face left"},
     ">": {"color": QColor("lightGray"), "description": "Respawn face right"},
     ".": {"color": QColor("white"), "description": "Placeholder"},
@@ -349,8 +349,10 @@ class MainWindow(QMainWindow):
         # Create a button for each defined tile type.
         for tile, properties in TILE_PROPERTIES.items():
             tile_layout = QHBoxLayout()
+            tile_layout.setSpacing(3)
+            tile_layout.setContentsMargins(5, 2, 5, 2)
 
-            # Create a QLable for the color square with the tile's letter
+            # Create a QLabel for the color square with the tile's letter
             color_square = QLabel(tile)
             color_square.setFixedSize(30, 30)
             color_square.setAlignment(Qt.AlignCenter)  # Center the letter
@@ -366,6 +368,7 @@ class MainWindow(QMainWindow):
             # Create the button for the tile
             btn = QPushButton(properties["description"])
             btn.setMinimumWidth(150)
+            btn.setMinimumHeight(50)
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
             self.tile_buttons[tile] = btn  # Store the button for styling
             tile_layout.addWidget(btn)
@@ -520,7 +523,7 @@ class MainWindow(QMainWindow):
         text_edit.setReadOnly(True)
         dlg_layout.addWidget(text_edit)
 
-        # Add a lable to inform the user that the string has been copies
+        # Add a label to inform the user that the string has been copied
         copied_label = QLabel("Copied to clipboard.")
         copied_label.setStyleSheet("font-weight: bold;")
         dlg_layout.addWidget(copied_label)
