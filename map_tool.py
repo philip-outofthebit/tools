@@ -14,7 +14,7 @@ Feel free to reach out for feedback or suggestions.
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QPushButton, QLabel, QDialog, QTextEdit, QMessageBox, QInputDialog, QShortcut
+    QPushButton, QLabel, QDialog, QTextEdit, QMessageBox, QInputDialog, QShortcut, QCheckBox
 )
 from PyQt5.QtGui import QPainter, QColor, QPen, QKeySequence, QPixmap, QBrush
 from PyQt5.QtCore import Qt
@@ -328,6 +328,7 @@ class MainWindow(QMainWindow):
         self.grid_widget = GridWidget()
         self.tile_buttons = {}  # Store tile buttons for dynamic styling
         self.mode_buttons = {}  # Store mode buttons for dynamic styling
+        self.always_add_zero = False  # Track user preference for always adding '0'
         self.init_ui()
 
     def init_ui(self) -> None:
@@ -368,7 +369,7 @@ class MainWindow(QMainWindow):
             # Create the button for the tile
             btn = QPushButton(properties["description"])
             btn.setMinimumWidth(150)
-            btn.setMinimumHeight(50)
+            # btn.setMinimumHeight(50)
             btn.clicked.connect(lambda checked, t=tile: self.select_tile(t))
             self.tile_buttons[tile] = btn  # Store the button for styling
             tile_layout.addWidget(btn)
@@ -490,17 +491,21 @@ class MainWindow(QMainWindow):
                 btn.setStyleSheet("")
 
     def export_map(self) -> None:
-        # Check and ask user if '0' should be added to top-left corner
-        if self.grid_widget.grid[0][0] != '0':
-            reply = QMessageBox.question(
-                self,
-                "Top-Left Corner Check",
-                "'0' is needed in the top-left corner for background and camera alignment.\n\nIs there a specific reason you don't want '0' at the top-left corner?",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
-            )
-            if reply == QMessageBox.No:
-                # Update the grid to add '0' to the top-left corner
+        # Check if '0' should always be added to the top-left corner
+        if self.always_add_zero or self.grid_widget.grid[0][0] != '0':
+            if not self.always_add_zero:
+                reply = QMessageBox.question(
+                    self,
+                    "Top-Left Corner Check",
+                    "'0' is usually used for locating the background and camera.\
+                    Would you like to add '0' to the top-left corner?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+                if reply == QMessageBox.Yes:
+                    self.grid_widget.grid[0][0] = '0'
+                    self.grid_widget.update()
+            else:
                 self.grid_widget.grid[0][0] = '0'
                 self.grid_widget.update()
 
@@ -523,6 +528,12 @@ class MainWindow(QMainWindow):
         text_edit.setReadOnly(True)
         dlg_layout.addWidget(text_edit)
 
+        # Add a checkbox for always adding '0'
+        checkbox = QCheckBox("Always add '0' to top-left corner")
+        checkbox.setChecked(self.always_add_zero)
+        checkbox.stateChanged.connect(lambda state: self.set_always_add_zero(state))
+        dlg_layout.addWidget(checkbox)
+
         # Add a label to inform the user that the string has been copied
         copied_label = QLabel("Copied to clipboard.")
         copied_label.setStyleSheet("font-weight: bold;")
@@ -535,6 +546,9 @@ class MainWindow(QMainWindow):
 
         # Show the dialog
         dlg.exec_()
+
+    def set_always_add_zero(self, state: int) -> None:
+        self.always_add_zero = bool(state)
 
     def import_map(self) -> None:
         dlg = QDialog(self)
