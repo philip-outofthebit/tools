@@ -21,7 +21,7 @@ from PyQt5.QtCore import Qt
 import platform
 from typing import Optional
 
-VERSION = f"1.0.7 {platform.system()}"
+VERSION = f"1.0.8 {platform.system()}"
 
 # Define tile properties (color and description) for easier management.
 TILE_PROPERTIES = {
